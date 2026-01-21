@@ -15,6 +15,22 @@ and `:Macro` command that can
 - set/run macros
 - and automatically convert it into a self-recursive macro.
 
+### Usage overview
+
+```
+" Remove the last word and then insert "abc".
+:Normal i<C-w>abc
+
+" Same above, but dot-repeatable.
+:Normal --dotrepeat i<C-w>abc
+
+" Wrap line text by "f()" for all lines from the cursor line to the EOF.
+:Macro ^Cf(<C-r>")<ESC>j
+
+" Wrap the line under cursor by "**".  This can be replayed by "@q".
+:Macro --no-rec I**<ESC>A**<ESC>
+```
+
 ### The `:Normal` command
 
 The `:Normal` command is an easier to use version of the built-in `:normal` command, which emulates key types in Normal mode.
