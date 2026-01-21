@@ -1,0 +1,136 @@
+let s:assert = themis#helper('assert')
+let s:fn = themis#helper('scope').funcs('autoload/litedit/command.vim')
+call themis#helper('command').with(s:assert)
+call themis#func_alias(s:assert)
+call themis#func_alias(s:fn)
+
+Describe s:parse_args_macro()
+  Before all
+    function Parse(args)
+      return s:fn.parse_args_macro(a:args)
+    endfunction
+  End
+
+  After all
+    delfunction Parse
+  End
+
+  It returns entire input as is as the query.
+    let r = Parse('abc<CR>')
+    Assert True(r.is_ok())
+
+    let [query, opts] = r.get_value()
+    Assert Equals(query, 'abc<CR>')
+    Assert Equals(opts, {})
+  End
+
+  It doesn't omit trailing spaces.
+    let r = Parse('abc  ')
+    Assert True(r.is_ok())
+
+    let [query, opts] = r.get_value()
+    Assert Equals(query, 'abc  ')
+    Assert Equals(opts, {})
+  End
+
+  It accepts valid single boolean flags.
+    const cases = [
+      \ ['--rec', { 'rec': v:true }],
+      \ ['--exec', { 'exec': v:true }],
+      \ ['--confirm-continue', { 'confirm_continue': v:true }],
+      \ ]
+    for [input, opts] in cases
+      let msg = $'input: {input}'
+      let r = Parse(input)
+      Assert True(r.is_ok(), msg)
+
+      let r = r.get_value()
+      Assert Equals(r[0], '', msg)
+      Assert Equals(r[1], opts, msg)
+    endfor
+  End
+
+  It negates boolean flags when flags are prefixed by "--no".
+    const cases = [
+      \ ['--no-rec', { 'rec': v:false }],
+      \ ['--no-exec', { 'exec': v:false }],
+      \ ['--no-confirm-continue', { 'confirm_continue': v:false }],
+      \ ]
+    for [input, opts] in cases
+      let msg = $'input: {input}'
+      let r = Parse(input)
+      Assert True(r.is_ok(), msg)
+
+      let r = r.get_value()
+      Assert Equals(r[0], '', msg)
+      Assert Equals(r[1], opts, msg)
+    endfor
+  End
+
+  It accepts "--reg" flag with register name without "@".
+    let r = Parse('--reg a')
+    Assert True(r.is_ok())
+
+    let [query, opts] = r.get_value()
+    Assert Empty(query)
+    Assert Equals(opts, { 'reg': 'a' })
+  End
+
+  It accepts "--reg" flag with register name with "@".
+    let r = Parse('--reg @b')
+    Assert True(r.is_ok())
+
+    let [query, opts] = r.get_value()
+    Assert Empty(query)
+    Assert Equals(opts, { 'reg': 'b' })
+  End
+
+  It returns erroneous result when no register is specified after "--reg".
+    let r = Parse('--reg')
+    Assert True(r.is_err())
+    Assert Match(r.get_value(), '^No register is specified')
+  End
+
+  It returns erroneous result when invalid register name is specified.
+    let r = Parse('--reg #')
+    Assert True(r.is_err())
+    Assert Equal(r.get_value(), "Invalid register name: '#'")
+  End
+
+  It treats every string after "--" as a query.
+    let r = Parse('-- --rec --exec')
+    Assert True(r.is_ok())
+
+    let [query, opts] = r.get_value()
+    Assert Equals(query, '--rec --exec')
+    Assert Empty(opts)
+  End
+
+  It returns erroneous result when the argument have invalid flag.
+    let r = Parse('-xyz')
+    Assert True(r.is_err())
+
+    let v = r.get_value()
+    Assert IsString(v)
+    Assert Equals(v, "Invalid flag: '-xyz'")
+  End
+
+  It returns erroneous result when unknown flag is given.
+    let r = Parse('--xyz')
+    Assert True(r.is_err())
+
+    let v = r.get_value()
+    Assert IsString(v)
+    Assert Equals(v, "Unknown flag: '--xyz'")
+  End
+
+  It parses multiple flags at once.
+    let r = Parse('--rec --no-exec --reg @x abc')
+    Assert True(r.is_ok())
+
+    let [query, opts] = r.get_value()
+    Assert Equals(query, 'abc')
+    Assert Equals(opts, { 'rec': v:true, 'exec': v:false, 'reg': 'x' })
+  End
+
+End

@@ -1,0 +1,179 @@
+*litedit.txt*		Literate editing operations
+
+Author: mityu
+License: MIT License
+
+==============================================================================
+CONTENTS						*litedit-contents*
+
+INTRODUCTION					|litedit-introduction|
+REQUIREMENTS					|litedit-requirements|
+COMMANDS					|litedit-commands|
+FUNCTIONS					|litedit-functions|
+VARIABLES					|litedit-variables|
+OPTION-STRUCTURE				|litedit-option-structure|
+EXAMPLE						|litedit-example|
+
+
+==============================================================================
+INTRODUCTION						*litedit-introduction*
+
+*litedit.vim* is a utility plugin for invoking edit commands more easily from
+command-line.
+
+The functionalities of this plugin are |:Normal| command and |:Macro| command.
+The |:Normal| command is a alternative for the built-in |:normal| command
+with support for <XXX> key notation.
+The |:Macro| command is for recording and executing macros from command-line,
+also with support for <XXX> key notation.
+
+Since they accepts the <XXX> style key notation it's easier to write down key
+sequences, therefore it can be more useful than built-in functionalities.
+Plus, since they are run from command-line you can re-use edit operations
+from command-line history, it also can be more useful than the built-in |q|.
+
+==============================================================================
+REQUIREMENTS						*litedit-requirements*
+
+- Vim 9.1 or later.
+- Neovim 0.10 or later.
+
+==============================================================================
+COMMANDS						*litedit-commands*
+
+								*:Normal*
+:{range}Normal[!] [options] {commands}
+
+	Execute Normal mode commands {commands} like |:normal|.
+	The differences between this :Normal and the built-in |:normal| are:
+	 - Recognize <XXX> |key-notation|s.
+	 - Make {commands} dot-repeatable if dot-repeat is enabled.
+
+							*:Normal-options*
+	The values that supported as [options] are the follows.
+
+	 --dotrepeat	(boolean, default is off)
+	 	When this is specified, the dot-repeat feature is enabled and
+		you can repeat {commands} by dot |.|.
+
+	 --
+	 	All of the text after "--" is treated as {commands}.
+		This is useful to run {commands} that starts with "--".
+
+	Every boolean option flags can be negated by prefixing "--no-".  For
+	example, providing `--no-dotrepeat` will disable the dot-repeat
+	feature.
+
+	CAUTION: The {range} support is not yet implemented.
+
+								*:Macro*
+:Macro [options] {commands}
+
+	Write {commands} to a specific register and execute the macro.
+	In other words, `:Macro XXX` is typically a shorthand of typing
+	`qqXXXq@q@q@q...` in Normal mode.
+	The <XXX> key-notation can be used in {commands} as well as |:Normal|.
+
+							*:Macro-options*
+	The values that supported as [options] are the follows.
+
+	 --reg		(character, default is "q")
+	 	Specify a register name that is used to record and execute
+		macro.  See |macro| for the list of available registers.
+
+	 --rec		(boolean, default is on)
+	 	When this is true, |:Macro| makes {commands} self-recursive
+		macro; i.e. the macro calls itself after execution.
+
+	 --exec		(boolean, default is on)
+	 	When this is false, the |:Macro| command only record {commands}
+		and does not execute the macro automatically.
+
+	 --
+	 	All of the text after "--" is treated as {commands}.
+		This is useful to run {commands} that starts with "--".
+
+	Every boolean option flags can be negated by prefixing "--no-".  For
+	example, providing `--no-exec` will make the --exec option off.
+
+
+==============================================================================
+FUNCTIONS						*litedit-functions*
+
+							*litedit#normal()*
+litedit#normal({query}, {opts})
+	The function interface of |:Normal|.
+	{query} is the command to execute.
+	{opts} is a |Dict| consist of options for |:Normal|.
+	TODO: Write
+
+							*litedit#macro()*
+litedit#macro({opts})
+	The function interface of |:Macro|.
+	{query} is the command to execute.
+	{opts} is a |Dict| consist of options for |:Macro|.
+	TODO: Write
+
+
+==============================================================================
+VARIABLES						*litedit-variables*
+
+						*g:litedit#default_opts*
+g:litedit#default_opts
+	Stores default option values.  This is read-only.  See
+	|litedit-option-structure| for the value structure.
+
+					*g:litedit_opts* *b:litedit_opts*
+g:litedit_opts
+b:litedit_opts
+	Specify option values.  See |litedit-option-structure| for the format.
+
+	When both of `g:litedit_opts` and `b:litedit_opts` are defined, the
+	latter takes precedence.
+
+	Example: >vim
+		let g:litedit_opts = #{
+		\ normal: #{ dotrepeat: v:true },
+		\ macro: #{ reg: 'x' },
+		\ }
+<
+
+==============================================================================
+OPTION-STRUCTURE				*litedit-option-structure*
+
+
+The option store variable should be a |Dict| with keys "normal" and "macro".
+
+Each value associated with "normal" and "macro" key should be a |Dict| of
+option value dictionary for |:Normal| and |:Macro| respectively.
+
+For available keys of option value dictionary, see |:Normal-options| and 
+|:Macro-options|.  If a command have option named "--XXX", then the option
+value dictionary for the command can have "XXX" key.  For example, since the
+|:Normal| command have the boolean "--dotrepeat" option, the dictionary
+`{ 'dotrepeat': v:true }` is a valid option dictionary for the |:Normal|
+command.
+
+Examples: >vim
+	let g:litedit_opts = #{
+	\ normal: #{ dotrepeat: v:true },
+	\ macro: #{ reg: 'x' },
+	\ }
+
+	let g:litedit_opts = #{
+	\ normal: #{ dotrepeat: v:true },
+	\ }
+
+	let g:litedit_opts = #{
+	\ macro: #{ reg: 'x', exec: v:false },
+	\ }
+<
+
+==============================================================================
+EXAMPLE							*litedit-example*
+
+
+TODO: Write
+
+==============================================================================
+vim:tw=78:fo=tcq2mM:ts=8:ft=help:norl

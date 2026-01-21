@@ -1,0 +1,60 @@
+let s:assert = themis#helper('assert')
+call themis#helper('command').with(s:assert)
+call themis#func_alias(s:assert)
+
+Describe result-object
+  Before all
+    let g:builder = litedit#result#get_builders()
+  End
+
+  After all
+    unlet g:builder
+  End
+
+  It can build a value that represents ok or erroneous value.
+    Assert KeyExists(g:builder, 'ok')
+    Assert KeyExists(g:builder, 'err')
+  End
+
+  Context result is ok
+    Before all
+      let g:r = g:builder.ok(0)
+    End
+
+    After all
+      unlet g:r
+    End
+
+    It's is_ok() returns TRUE.
+      Assert True(g:r.is_ok())
+    End
+
+    It's is_err() returns FALSE.
+      Assert False(g:r.is_err())
+    End
+  End
+
+  Context result is error
+    Before all
+      let g:r = g:builder.err(0)
+    End
+
+    After all
+      unlet g:r
+    End
+
+    It's is_ok() returns FALSE.
+      Assert False(g:r.is_ok())
+    End
+
+    It's is_err() returns TRUE.
+      Assert True(g:r.is_err())
+    End
+  End
+
+  It's get_value() returns wrapped value.
+    Assert Equals(g:builder.ok({'abc': 'xyz'}).get_value(), {'abc': 'xyz'})
+    Assert Equals(g:builder.err({'abc': '147'}).get_value(), {'abc': '147'})
+  End
+End
+

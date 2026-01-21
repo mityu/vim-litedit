@@ -1,0 +1,148 @@
+let s:assert = themis#helper('assert')
+let s:fn = themis#helper('scope').funcs('autoload/litedit.vim')
+call themis#helper('command').with(s:assert)
+call themis#func_alias(s:assert)
+call themis#func_alias(s:fn)
+
+Describe s:get_opts()
+  Before all
+    function GetOpts(cmdname) abort
+      return s:fn.get_opts(a:cmdname)
+    endfunction
+
+    const s:cmdnames = ['normal', 'macro']
+  End
+
+  After all
+    delfunction GetOpts
+    unlet s:cmdnames
+  End
+
+  Context no user config
+    It returns default option values.
+      for cmdname in s:cmdnames
+        let opts = GetOpts(cmdname)
+        Assert Equals(opts, g:litedit#default_opts[cmdname], $'cmdname: {cmdname}')
+      endfor
+    End
+
+    It's return value is isolated the default option container.
+      for cmdname in s:cmdnames
+        let defopts = deepcopy(g:litedit#default_opts[cmdname])
+        let opts = GetOpts(cmdname)
+        call filter(opts, '0')
+        Assert Equals(g:litedit#default_opts[cmdname], defopts, $'cmdname: {cmdname}')
+      endfor
+    End
+  End
+
+  Context global user config is provided
+    Before each
+      let g:litedit_opts = #{
+        \ normal: #{ dotrepeat: v:false },
+        \ macro: #{ reg: 'x', rec: v:false },
+        \ }
+    End
+
+    After all
+      unlet g:litedit_opts
+    End
+
+    Context it returns option values that is partially overwritten by user configuration
+      It when command is "normal".
+        const opts = GetOpts('normal')
+        Assert Equals(opts, #{ dotrepeat: v:false })
+      End
+
+      It when command is "macro".
+        const opts = GetOpts('macro')
+        Assert Equals(opts, #{ reg: 'x', rec: v:false, exec: v:true })
+      End
+    End
+
+    It's return value is isolated the default option container.
+      for cmdname in s:cmdnames
+        let useropts = deepcopy(g:litedit_opts[cmdname])
+        let opts = GetOpts(cmdname)
+        call filter(opts, '0')
+        Assert Equals(g:litedit_opts[cmdname], useropts, $'cmdname: {cmdname}')
+      endfor
+    End
+  End
+
+  Context buffer local user config is provided
+    Before each
+      let b:litedit_opts = #{
+        \ normal: #{ dotrepeat: v:false },
+        \ macro: #{ reg: 'x', rec: v:false },
+        \ }
+    End
+
+    After all
+      unlet b:litedit_opts
+    End
+
+    Context it returns option values that is partially overwritten by user configuration
+      It when command is "normal".
+        const opts = GetOpts('normal')
+        Assert Equals(opts, #{ dotrepeat: v:false })
+      End
+
+      It when command is "macro".
+        const opts = GetOpts('macro')
+        Assert Equals(opts, #{ reg: 'x', rec: v:false, exec: v:true })
+      End
+    End
+
+    It's return value is isolated the default option container.
+      for cmdname in s:cmdnames
+        let useropts = deepcopy(b:litedit_opts[cmdname])
+        let opts = GetOpts(cmdname)
+        call filter(opts, '0')
+        Assert Equals(b:litedit_opts[cmdname], useropts, $'cmdname: {cmdname}')
+      endfor
+    End
+  End
+
+  Context both global and buffer local user config is provided
+    Before each
+      let g:litedit_opts = #{
+        \ normal: #{ dotrepeat: v:false },
+        \ macro: #{ reg: 'w', rec: v:false },
+        \ }
+
+      let b:litedit_opts = #{
+        \ normal: #{ dotrepeat: v:true },
+        \ macro: #{ reg: 'x', exec: v:false },
+        \ }
+    End
+
+    After all
+      unlet b:litedit_opts
+      unlet g:litedit_opts
+    End
+
+    Context buffer local user config is prioritized
+      It when command is "normal".
+        const opts = GetOpts('normal')
+        Assert Equals(opts, #{ dotrepeat: v:true })
+      End
+
+      It when command is "macro".
+        const opts = GetOpts('macro')
+        Assert Equals(opts, #{ reg: 'x', rec: v:false, exec: v:false })
+      End
+    End
+
+    It's return value is isolated the default option container.
+      for cmdname in s:cmdnames
+        let bufferopts = deepcopy(b:litedit_opts[cmdname])
+        let globalopts = deepcopy(g:litedit_opts[cmdname])
+        let opts = GetOpts(cmdname)
+        call filter(opts, '0')
+        Assert Equals(g:litedit_opts[cmdname], globalopts, $'cmdname: {cmdname}')
+        Assert Equals(b:litedit_opts[cmdname], bufferopts, $'cmdname: {cmdname}')
+      endfor
+    End
+  End
+End

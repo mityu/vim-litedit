@@ -1,0 +1,91 @@
+let s:assert = themis#helper('assert')
+call themis#helper('command').with(s:assert)
+call themis#func_alias(s:assert)
+
+Describe :Normal
+  Before each
+    %bwipeout!
+  End
+
+  After all
+    %bwipeout!
+  End
+
+  It executes given command.
+    call setline(1, 'abc xyz')
+    call cursor(1, 1)
+    Normal dw
+    Assert Equals(getline(1), 'xyz')
+  End
+
+  Context mapping is defined
+    Before all
+      nnoremap x xxx
+    End
+
+    After all
+      nmapclear
+    End
+
+    Context when "!" is not given
+      It respects mappings.
+        call setline(1, 'abcdef')
+        call cursor(1, 1)
+        Normal x
+        Assert Equals(getline(1), 'def')
+      End
+    End
+
+    Context when "!" is given
+      It doesn't respect mappings.
+        call setline(1, 'abcdef')
+        call cursor(1, 1)
+        Normal! x
+        Assert Equals(getline(1), 'bcdef')
+      End
+    End
+  End
+
+  It recognizes "<XXX>" key notation.
+    Normal iabc<CR>xyz<ESC>
+    Assert Equals(getline(1, '$'), ['abc', 'xyz'])
+  End
+
+  Context dot-repeat test
+    Before each
+      call feedkeys("iabc\<ESC>", 'nix')  " Overwrite dot-repeat stack.
+      %bwipeout!
+    End
+
+    It can repeat command by dot when dot-repeat is enabled.
+      call setline(1, '###abcxyz')
+      call cursor(1, 1)
+      Normal --dotrepeat xxx
+      call feedkeys('', 'x')
+      Assert Equals(getline(1), 'abcxyz')
+      normal! .
+      Assert Equals(getline(1), 'xyz')
+    End
+
+    Context dot-repeat is disabled
+      Before each
+        let b:litedit_opts = #{ normal: #{ dotrepeat: v:false } }
+      End
+
+      After all
+        unlet b:litedit_opts
+      End
+
+      It doesn't overwrite dot-repeat stack.
+        call setline(1, '###abcxyz')
+        call cursor(1, 1)
+        Normal xxx
+        Assert Equals(getline(1), 'abcxyz')
+        normal! .
+        Assert NotEquals(getline(1), 'xyz')
+      End
+    End
+
+  End
+
+End

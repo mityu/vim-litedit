@@ -1,0 +1,150 @@
+let s:assert = themis#helper('assert')
+call themis#helper('command').with(s:assert)
+call themis#func_alias(s:assert)
+
+Describe :Macro
+  Before all
+    function Macro(args) abort
+      execute 'Macro' a:args
+      call feedkeys('', 'x')
+    endfunction
+  End
+
+  Before each
+    let @q = ''
+    %bwipeout!
+  End
+
+  After all
+    let @q = ''
+    %bwipeout!
+    delfunction Macro
+  End
+
+  It write given command to default register.
+    call Macro('abc')
+    Assert Match(@q, '^abc')
+  End
+
+  It runs specified command in default.
+    call setline(1, ["abc", "def"])
+    call Macro('ciwf(<C-r>")<ESC>j')
+    Assert Equals(getline(1, '$'), ["f(abc)", "f(def)"])
+  End
+
+  It accepts whitespace at the head of command.
+    call Macro('<Space> xxx')
+    Assert Match(@q, '^  xxx')
+  End
+
+  Context no-recursive
+    Before all
+      let g:litedit_opts = #{ macro: #{ rec: v:false } }
+    End
+
+    After all
+      unlet g:litedit_opts
+    End
+
+    It executes given command only once.
+      call setline(1, ["abc", "def"])
+      call Macro('ciwf(<C-r>")<ESC>j')
+      Assert Equals(getline(1, '$'), ["f(abc)", "def"])
+    End
+  End
+
+  Context no-exec
+    Before all
+      let g:litedit_opts = #{ macro: #{ exec: v:false } }
+    End
+
+    After all
+      unlet g:litedit_opts
+    End
+
+    It does not run given command automatically.
+      call setline(1, ["abc", "def"])
+      call Macro('ciwf(<C-r>")<ESC>j')
+      Assert Equals(getline(1, '$'), ["abc", "def"])
+      Assert NotEquals(@q, '')
+    End
+  End
+
+  Context explicitly specify register to use
+    Before each
+      let @x = ''
+    End
+
+    After all
+      let @x = ''
+    End
+
+    It uses specified register.
+      call setline(1, ["abc", "def"])
+      call Macro('--reg x ciwf(<C-r>")<ESC>j')
+      Assert Equals(getline(1, '$'), ["f(abc)", "f(def)"])
+      Assert Equals(@q, '')
+      Assert Match(@x, '@x$')
+    End
+
+    It uses the register specified in "@x" format.
+      call setline(1, ["abc", "def"])
+      call Macro('--reg @x ciwf(<C-r>")<ESC>j')
+      Assert Equals(getline(1, '$'), ["f(abc)", "f(def)"])
+      Assert Equals(@q, '')
+      Assert Match(@x, '@x$')
+    End
+
+  End
+
+  Context enable confirm-continue option
+    Before all
+      let g:litedit_opts = #{ macro: #{ confirm_continue: v:true, exec: v:true, rec: v:true } }
+    End
+
+    After all
+      unlet g:litedit_opts
+    End
+
+    Context check timing of dialog
+      Before each
+        let g:log_state = []
+      End
+
+      After all
+        unlet g:log_state
+      End
+
+      It shows dialog after the first try of macro.
+        Skip '--confirm-continue' is not implemented yet.
+
+        call setline(1, ["abc", "def"])
+        Macro ^xxj<Cmd>call add(g:log_state, getline(1, '$'))<CR>
+        call feedkeys('y', 'nx')
+
+        Assert NotEmpty(g:log_state)
+        Assert Equals(g:log_state[0], ['c', 'def'])
+      End
+    End
+
+    It continues running when the answer is yes.
+      Skip '--confirm-continue' is not implemented yet.
+
+      call setline(1, ["abc", "def"])
+      Macro ^xxj
+      call feedkeys('y', 'nx')
+      Assert Equals(getline(1, '$'), ["c", "f"])
+    End
+
+    It cancels running when the answer is no.
+      Skip '--confirm-continue' is not implemented yet.
+
+      call setline(1, ["abc", "def"])
+      Macro ^xxj
+      call feedkeys('n', 'nx')
+      Assert Equals(getline(1, '$'), ["c", "def"])
+    End
+
+  End
+
+End
