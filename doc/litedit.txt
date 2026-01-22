@@ -77,9 +77,11 @@ COMMANDS						*litedit-commands*
 							*:Macro-options*
 	The values that supported as [options] are the follows.
 
-	 --reg		(character, default is "q")
-	 	Specify a register name that is used to record and execute
-		macro.  See |macro| for the list of available registers.
+	 --reg {0-9a-zA-Z"}	(character of register name, default is "q")
+		Specify a register name {0-9a-zA-Z"} that is used to record
+		and execute macro.  Uppercase is for appending to a register.
+
+		See also: |macro|
 
 	 --rec		(boolean, default is on)
 	 	When this is true, |:Macro| makes {commands} self-recursive
