@@ -21,7 +21,7 @@ Describe litedit#command#complete_macro()
 
   It completes all of the option flags.
     const r = Complete('', '', 0)
-    Assert Equals(r, ['--', '--exec', '--rec', '--reg', '--no-exec', '--no-rec'])
+    Assert Equals(r, ['--', '--check-continue', '--exec', '--rec', '--reg', '--no-check-continue', '--no-exec', '--no-rec'])
   End
 
   It completes a part of option flags.

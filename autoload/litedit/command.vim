@@ -16,11 +16,11 @@ function s:get_next_chunk(text) abort
   return [chunk, text]
 endfunction
 
-function s:get_next_n_chunk(text, count) abort
+function s:get_next_n_chunks(text, count) abort
   let text = a:text
   let chunks = []
   for _ in range(a:count)
-    let [chunk, text] = s:get_next_chunk(text)
+    let [chunk, text] = s:get_next_chunk(s:trim_head(text))
     call add(chunks, chunk)
   endfor
   return [chunks, text]
@@ -78,6 +78,48 @@ function s:parse_args(config, text) abort
   endwhile
 endfunction
 
+function s:complete_args(config, cmdline) abort
+  let cmdline = a:cmdline
+  let parsing_arg_of = v:null
+
+  while v:true
+    let [token, cmdline] = s:get_next_chunk(s:trim_head(cmdline))
+
+    if cmdline ==# ''
+      break
+    elseif token ==# '--' || token !~# '^--'
+      return []
+    endif
+
+    let flagname = token[2 :]
+    let flagconfig = get(a:config, flagname, #{ nargs: 0 })
+
+    if flagconfig.nargs == 0
+      continue
+    endif
+
+    let [chunks, rest] = s:get_next_n_chunks(s:trim_head(cmdline), flagconfig.nargs)
+    call filter(chunks, '!empty(v:val)')
+
+    if len(chunks) != flagconfig.nargs || rest ==# ''
+      let parsing_arg_of = flagname
+      break
+    else
+      let cmdline = rest
+      continue
+    endif
+  endwhile
+
+  if parsing_arg_of is v:null
+    let flags = ['--']
+      \ + a:config->keys()->sort()->map({ _, v -> '--' .. v})
+      \ + a:config->copy()->filter({ _, v -> v.nargs == 0 })->keys()->sort()->map({ _, v -> '--no-' .. v })
+    return filter(flags, { _, v -> strpart(v, 0, strlen(token)) ==# token })
+  else
+    return call(a:config[parsing_arg_of].gen_completion, [cmdline])
+  endif
+endfunction
+
 let s:args_config = {}
 let s:args_config.macro = {
   \ 'reg': #{ nargs: 1 },
@@ -103,6 +145,17 @@ function s:args_config.macro.reg.parse_args(flag, args) abort
   else
     return s:r.err($'Invalid register name: {string(reg)}')
   endif
+endfunction
+
+" Complete arguments of '--reg' flag of ':Macro' comand.
+function s:args_config.macro.reg.gen_completion(cmdline) abort
+  const [arglead, _] = s:get_next_chunk(s:trim_head(a:cmdline))
+
+  let regs = ['"'] + s:range_char('0', '9') + s:range_char('a', 'z') + s:range_char('A', 'Z')
+  if arglead =~# '^@'
+    call map(regs, '"@" .. v:val')
+  endif
+  return filter(regs, { _, v -> strpart(v, 0, strlen(arglead)) ==# arglead })
 endfunction
 
 " Parse argument for ':Macro' command and returns parsed result.
@@ -145,42 +198,44 @@ endfunction
 
 function litedit#command#complete_macro(arglead, cmdline, curpos) abort
   let cmdline = a:cmdline->strpart(0, a:curpos)->matchstr('^\s*\a\+\zs.*$')
-  let arglead = v:null
-  let argkind = 'flag'
-
-  while v:true
-    let cmdline = s:trim_head(cmdline)
-    let token = matchstr(cmdline, '^\S*')
-    let cmdline = cmdline[strlen(token) :]
-
-    if cmdline ==# ''
-      let arglead = token
-      break
-    endif
-
-    if argkind ==# 'flag'
-      if token ==# '--' || token !~# '^--'
-        return []
-      elseif token ==# '--reg'
-        let argkind = 'arg-of-reg'
-      endif
-    elseif argkind ==# 'arg-of-reg'
-      let argkind = 'flag'
-    else
-      throw $'Internal error: unknown argkind: {argkind}'
-    endif
-  endwhile
-
-  if argkind ==# 'flag'
-    let flags = ['--', '--exec', '--rec', '--reg', '--no-exec', '--no-rec']
-    return filter(flags, { _, v -> strpart(v, 0, strlen(arglead)) ==# arglead })
-  elseif argkind ==# 'arg-of-reg'
-    let regs = ['"'] + s:range_char('0', '9') + s:range_char('a', 'z') + s:range_char('A', 'Z')
-    if arglead =~# '^@'
-      call map(regs, '"@" .. v:val')
-    endif
-    return filter(regs, { _, v -> strpart(v, 0, strlen(arglead)) ==# arglead })
-  else
-    throw $'Internal error: unknown argkind: {argkind}'
-  endif
+  return s:complete_args(s:args_config.macro, cmdline)
+  "let cmdline = a:cmdline->strpart(0, a:curpos)->matchstr('^\s*\a\+\zs.*$')
+  "let arglead = v:null
+  "let argkind = 'flag'
+  "
+  "while v:true
+  "  let cmdline = s:trim_head(cmdline)
+  "  let token = matchstr(cmdline, '^\S*')
+  "  let cmdline = cmdline[strlen(token) :]
+  "
+  "  if cmdline ==# ''
+  "    let arglead = token
+  "    break
+  "  endif
+  "
+  "  if argkind ==# 'flag'
+  "    if token ==# '--' || token !~# '^--'
+  "      return []
+  "    elseif token ==# '--reg'
+  "      let argkind = 'arg-of-reg'
+  "    endif
+  "  elseif argkind ==# 'arg-of-reg'
+  "    let argkind = 'flag'
+  "  else
+  "    throw $'Internal error: unknown argkind: {argkind}'
+  "  endif
+  "endwhile
+  "
+  "if argkind ==# 'flag'
+  "  let flags = ['--', '--exec', '--rec', '--reg', '--no-exec', '--no-rec']
+  "  return filter(flags, { _, v -> strpart(v, 0, strlen(arglead)) ==# arglead })
+  "elseif argkind ==# 'arg-of-reg'
+  "  let regs = ['"'] + s:range_char('0', '9') + s:range_char('a', 'z') + s:range_char('A', 'Z')
+  "  if arglead =~# '^@'
+  "    call map(regs, '"@" .. v:val')
+  "  endif
+  "  return filter(regs, { _, v -> strpart(v, 0, strlen(arglead)) ==# arglead })
+  "else
+  "  throw $'Internal error: unknown argkind: {argkind}'
+  "endif
 endfunction
