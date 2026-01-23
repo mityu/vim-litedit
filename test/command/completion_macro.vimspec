@@ -1,0 +1,65 @@
+let s:assert = themis#helper('assert')
+call themis#helper('command').with(s:assert)
+call themis#func_alias(s:assert)
+
+Describe litedit#command#complete_macro()
+  Before all
+    function Complete(arglead, cmdline, curpos) abort
+      return litedit#command#complete_macro(
+        \ a:arglead, $'Macro {a:cmdline}', strlen('Macro ') + a:curpos)
+    endfunction
+
+    function RangeChar(start, end) abort
+      return range(char2nr(a:start), char2nr(a:end))->map('nr2char(v:val)')
+    endfunction
+  End
+
+  After all
+    delfunction RangeChar
+    delfunction Complete
+  End
+
+  It completes all of the option flags.
+    const r = Complete('', '', 0)
+    Assert Equals(r, ['--', '--exec', '--rec', '--reg', '--no-exec', '--no-rec'])
+  End
+
+  It completes a part of option flags.
+    const r = Complete('--r', '--r', 3)
+    Assert Equals(r, ['--rec', '--reg'])
+  End
+
+  It ignores text after cursor position.
+    const r = Complete('--r', '--r XXXXXXX', 3)
+    Assert Equals(r, ['--rec', '--reg'])
+  End
+
+  It completes register names.
+    const r = Complete('', '--reg ', 6)
+    Assert Equals(r, ['"'] + RangeChar('0', '9') + RangeChar('a', 'z') + RangeChar('A', 'Z'))
+  End
+
+  It completes register names prefixed with "@".
+    const r = Complete('@', '--reg @', 7)
+
+    const reglist = ['"'] + RangeChar('0', '9') + RangeChar('a', 'z') + RangeChar('A', 'Z')
+    Assert Equals(r, reglist->mapnew('"@" . v:val'))
+  End
+
+  It completes nothing after "--".
+    Assert Equals(Complete('--r', '-- --r', 6), [])
+  End
+
+  It take into account of white-spaces after "--".
+    Assert Equals(Complete('', '-- ', 3), [])
+  End
+
+  It completes nothing when the argument does not seem a start of flags.
+    Assert Equals(Complete('x', 'x', 1), [])
+  End
+
+  It completes nothing when arglead is after non-flag word.
+    Assert Equals(Complete('--', 'x --', 4), [])
+  End
+End
+

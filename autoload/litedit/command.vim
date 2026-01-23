@@ -6,6 +6,10 @@ function s:trim_head(s) abort
   return trim(a:s, '', 1)
 endfunction
 
+function s:range_char(start, end) abort
+  return range(char2nr(a:start), char2nr(a:end))->map('nr2char(v:val)')
+endfunction
+
 " Parse argument for ':Macro' command and returns parsed result.
 function s:parse_args_macro(args) abort
   let args = a:args
@@ -114,13 +118,50 @@ function litedit#command#normal(got_bang, args) abort
   call litedit#normal(query, opts)
 endfunction
 
-function litedit#command#complete_normal(...) abort
+function litedit#command#complete_normal(arglead, cmdline, curpos) abort
   " TODO: Implement
   return []
 endfunction
 
 
-function litedit#command#complete_macro(...) abort
-  " TODO: Implement
-  return []
+function litedit#command#complete_macro(arglead, cmdline, curpos) abort
+  let cmdline = a:cmdline->strpart(0, a:curpos)->matchstr('^\s*\a\+\zs.*$')
+  let arglead = v:null
+  let argkind = 'flag'
+
+  while v:true
+    let cmdline = s:trim_head(cmdline)
+    let token = matchstr(cmdline, '^\S*')
+    let cmdline = cmdline[strlen(token) :]
+
+    if cmdline ==# ''
+      let arglead = token
+      break
+    endif
+
+    if argkind ==# 'flag'
+      if token ==# '--' || token !~# '^--'
+        return []
+      elseif token ==# '--reg'
+        let argkind = 'arg-of-reg'
+      endif
+    elseif argkind ==# 'arg-of-reg'
+      let argkind = 'flag'
+    else
+      throw $'Internal error: unknown argkind: {argkind}'
+    endif
+  endwhile
+
+  if argkind ==# 'flag'
+    let flags = ['--', '--exec', '--rec', '--reg', '--no-exec', '--no-rec']
+    return filter(flags, { _, v -> strpart(v, 0, strlen(arglead)) ==# arglead })
+  elseif argkind ==# 'arg-of-reg'
+    let regs = ['"'] + s:range_char('0', '9') + s:range_char('a', 'z') + s:range_char('A', 'Z')
+    if arglead =~# '^@'
+      call map(regs, '"@" .. v:val')
+    endif
+    return filter(regs, { _, v -> strpart(v, 0, strlen(arglead)) ==# arglead })
+  else
+    throw $'Internal error: unknown argkind: {argkind}'
+  endif
 endfunction
