@@ -97,9 +97,9 @@ Describe :Macro
 
   End
 
-  Context enable confirm-continue option
+  Context enable check-continue option
     Before all
-      let g:litedit_opts = #{ macro: #{ confirm_continue: v:true, exec: v:true, rec: v:true } }
+      let g:litedit_opts = #{ macro: #{ check_continue: v:true, exec: v:true, rec: v:true } }
     End
 
     After all
@@ -116,7 +116,7 @@ Describe :Macro
       End
 
       It shows dialog after the first try of macro.
-        Skip '--confirm-continue' is not implemented yet.
+        Skip '--check-continue' is not implemented yet.
 
         call setline(1, ["abc", "def"])
         Macro ^xxj<Cmd>call add(g:log_state, getline(1, '$'))<CR>
@@ -128,7 +128,7 @@ Describe :Macro
     End
 
     It continues running when the answer is yes.
-      Skip '--confirm-continue' is not implemented yet.
+      Skip '--check-continue' is not implemented yet.
 
       call setline(1, ["abc", "def"])
       Macro ^xxj
@@ -137,7 +137,7 @@ Describe :Macro
     End
 
     It cancels running when the answer is no.
-      Skip '--confirm-continue' is not implemented yet.
+      Skip '--check-continue' is not implemented yet.
 
       call setline(1, ["abc", "def"])
       Macro ^xxj

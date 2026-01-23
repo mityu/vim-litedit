@@ -37,7 +37,7 @@ Describe s:parse_args_macro()
     const cases = [
       \ ['--rec', { 'rec': v:true }],
       \ ['--exec', { 'exec': v:true }],
-      \ ['--confirm-continue', { 'confirm_continue': v:true }],
+      \ ['--check-continue', { 'check_continue': v:true }],
       \ ]
     for [input, opts] in cases
       let msg = $'input: {input}'
@@ -54,7 +54,7 @@ Describe s:parse_args_macro()
     const cases = [
       \ ['--no-rec', { 'rec': v:false }],
       \ ['--no-exec', { 'exec': v:false }],
-      \ ['--no-confirm-continue', { 'confirm_continue': v:false }],
+      \ ['--no-check-continue', { 'check_continue': v:false }],
       \ ]
     for [input, opts] in cases
       let msg = $'input: {input}'
@@ -126,7 +126,7 @@ Describe s:parse_args_macro()
 
   It parses multiple flags at once.
     let r = Parse('--rec --no-exec --reg @x abc')
-    Assert True(r.is_ok())
+    Assert True(r.is_ok(), r.get_value())
 
     let [query, opts] = r.get_value()
     Assert Equals(query, 'abc')

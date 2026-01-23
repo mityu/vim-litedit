@@ -10,25 +10,40 @@ function s:range_char(start, end) abort
   return range(char2nr(a:start), char2nr(a:end))->map('nr2char(v:val)')
 endfunction
 
-" Parse argument for ':Macro' command and returns parsed result.
-function s:parse_args_macro(args) abort
-  let args = a:args
+function s:get_next_chunk(text) abort
+  const chunk = matchstr(a:text, '^\S*')
+  const text = a:text[strlen(chunk) :]
+  return [chunk, text]
+endfunction
+
+function s:get_next_n_chunk(text, count) abort
+  let text = a:text
+  let chunks = []
+  for _ in range(a:count)
+    let [chunk, text] = s:get_next_chunk(text)
+    call add(chunks, chunk)
+  endfor
+  return [chunks, text]
+endfunction
+
+function s:parse_args(config, text) abort
+  let text = a:text
   let opts = {}
+
   while v:true
-    let args = s:trim_head(args)
-    if args !~# '^-'
-      return s:r.ok([args, opts])
+    let text = s:trim_head(text)
+    if text !~# '^-'
+      return s:r.ok([text, opts])
     endif
 
-    let flag = matchstr(args, '^\S*')
-    let args = args[strlen(flag) :]
+    let [flag, text] = s:get_next_chunk(text)
     let flagname = v:null
     let flagvalue = v:null
 
     if flag =~# '^-[^-]'
       return s:r.err($'Invalid flag: {string(flag)}')
     elseif flag ==# '--'
-      return s:r.ok([s:trim_head(args), opts])
+      return s:r.ok([s:trim_head(text), opts])
     elseif flag =~# '^--no-'
       let flagname = flag[5 :]  " '5' represents strlen('--no-')
       let flagvalue = v:false
@@ -37,62 +52,66 @@ function s:parse_args_macro(args) abort
       let flagvalue = v:true
     endif
 
-    if flagname ==# 'reg'
-      " Specify register
-      let args = s:trim_head(args)
-      let reg = matchstr(args, '^\S*')
-      let args = args[strlen(reg) :]
-      if reg =~# '^@\?\(\d\|\a\|"\)$'
-        if reg[0] ==# '@'
-          let reg = reg[1]
-        endif
-        let opts.reg = reg
-      elseif reg ==# ''
-        return s:r.err($'No register is specified after "{flag}"')
-      else
-        return s:r.err($'Invalid register name: {string(reg)}')
-      endif
-    elseif index(['rec', 'exec', 'confirm-continue'], flagname) != -1
-      " Boolean flags
-      let opts[tr(flagname, '-', '_')] = flagvalue
-    else
+    if !has_key(a:config, flagname)
       return s:r.err($'Unknown flag: {string(flag)}')
+    endif
+
+    let optkey = tr(flagname, '-', '_')
+    let flagconfig = a:config[flagname]
+    if flagconfig.nargs == 0
+      let opts[optkey] = flagvalue
+    else
+      if flagvalue == v:false
+        " Only boolean flag can be negated by prefixing '--no-'.
+        return s:r.err($'This flag is not a boolean flag: {string(flag)}')
+      endif
+
+      let text = s:trim_head(text)
+      let r = call(flagconfig.parse_args, [flag, text])
+      if r.is_err()
+        return r
+      else
+        let [flagvalue, text] = r.get_value()
+        let opts[optkey] = flagvalue
+      endif
     endif
   endwhile
 endfunction
 
+let s:args_config = {}
+let s:args_config.macro = {
+  \ 'reg': #{ nargs: 1 },
+  \ 'rec': #{ nargs: 0 },
+  \ 'exec': #{ nargs: 0 },
+  \ 'check-continue': #{ nargs: 0 },
+  \ }
+let s:args_config.normal = {
+  \ 'dotrepeat': #{ nargs: 0 },
+  \ }
+
+" Parse an argument given for the '--reg' flag of ':Macro' command.
+function s:args_config.macro.reg.parse_args(flag, args) abort
+  let [reg, args] = s:get_next_chunk(a:args)
+
+  if reg =~# '^@\?\(\d\|\a\|"\)$'
+    if reg[0] ==# '@'
+      let reg = reg[1]
+    endif
+    return s:r.ok([reg, args])
+  elseif reg ==# ''
+    return s:r.err($'No register is specified after "{a:flag}"')
+  else
+    return s:r.err($'Invalid register name: {string(reg)}')
+  endif
+endfunction
+
+" Parse argument for ':Macro' command and returns parsed result.
+function s:parse_args_macro(args) abort
+  return s:parse_args(s:args_config.macro, a:args)
+endfunction
+
 function s:parse_args_normal(args) abort
-  let args = a:args
-  let opts = {}
-  while v:true
-    let args = s:trim_head(args)
-    if args !~# '^-'
-      return s:r.ok([args, opts])
-    endif
-
-    let flag = matchstr(args, '^\S*')
-    let args = args[strlen(flag) :]
-    let flagname = v:null
-    let flagvalue = v:null
-
-    if flag =~# '^-[^-]'
-      return s:r.err($'Invalid flag: {string(flag)}')
-    elseif flag ==# '--'
-      return s:r.ok([s:trim_head(args), opts])
-    elseif flag =~# '^--no-'
-      let flagname = flag[5 :]  " '5' represents strlen('--no-')
-      let flagvalue = v:false
-    else
-      let flagname = flag[2 :]
-      let flagvalue = v:true
-    endif
-
-    if index(['dotrepeat'], flagname) != -1
-      let opts[flagname] = flagvalue
-    else
-      return s:r.err($'Unknown flag: {string(flag)}')
-    endif
-  endwhile
+  return s:parse_args(s:args_config.normal, a:args)
 endfunction
 
 function litedit#command#macro(args) abort

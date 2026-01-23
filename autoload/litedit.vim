@@ -61,7 +61,7 @@ function litedit#macro(query, opts) abort
     let query = $'{query}@{opts.reg}'
   endif
 
-  " TODO: Support 'confirm-continue' option
+  " TODO: Support 'check-continue' option
   call setreg(opts.reg, query)
   if opts.exec
     call feedkeys($'@{opts.reg}', 'in')
