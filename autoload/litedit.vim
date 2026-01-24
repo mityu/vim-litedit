@@ -5,6 +5,7 @@ const s:default_opts_macro = #{
   \ reg: 'q',
   \ rec: v:true,
   \ exec: v:true,
+  \ check_continue: v:true,
   \ }
 const g:litedit#default_opts = #{
   \ normal: s:default_opts_normal,
@@ -22,6 +23,24 @@ endfunction
 function s:replace_termcodes(keys) abort
   return substitute(a:keys, '<[^<>]\+>',
     \ '\=eval(printf(''"\%s"'', submatch(0)))', 'g')
+endfunction
+
+function s:check_continue(reg, content) abort
+  call setreg(a:reg, a:content)
+
+  let answer = ''
+  call inputsave()
+  try
+    let answer = input('Continue executing macro? [y/n]')
+  finally
+    call inputrestore()
+  endtry
+
+  if answer =~? '^y'
+    return $'@{a:reg}'
+  else
+    return ''
+  endif
 endfunction
 
 function litedit#print_error(msg) abort
@@ -58,10 +77,15 @@ function litedit#macro(query, opts) abort
 
   let query = s:replace_termcodes(a:query)
   if opts.rec
-    let query = $'{query}@{opts.reg}'
+    if opts.check_continue
+      execute 'nnoremap <expr> <Plug>(__litedit-check-continue)'
+        \ $'<SID>check_continue({string(opts.reg)}, {($'{query}@{opts.reg}')->keytrans()->string()})'
+      let query = $"{query}\<Plug>(__litedit-check-continue)"
+    else
+      let query = $'{query}@{opts.reg}'
+    endif
   endif
 
-  " TODO: Support 'check-continue' option
   call setreg(opts.reg, query)
   if opts.exec
     call feedkeys($'@{opts.reg}', 'in')

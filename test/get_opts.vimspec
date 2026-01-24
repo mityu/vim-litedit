@@ -56,7 +56,7 @@ Describe s:get_opts()
 
       It when command is "macro".
         const opts = GetOpts('macro')
-        Assert Equals(opts, #{ reg: 'x', rec: v:false, exec: v:true })
+        Assert Equals(opts, #{ reg: 'x', rec: v:false, exec: v:true, check_continue: v:true })
       End
     End
 
@@ -90,7 +90,7 @@ Describe s:get_opts()
 
       It when command is "macro".
         const opts = GetOpts('macro')
-        Assert Equals(opts, #{ reg: 'x', rec: v:false, exec: v:true })
+        Assert Equals(opts, #{ reg: 'x', rec: v:false, exec: v:true, check_continue: v:true })
       End
     End
 
@@ -130,7 +130,7 @@ Describe s:get_opts()
 
       It when command is "macro".
         const opts = GetOpts('macro')
-        Assert Equals(opts, #{ reg: 'x', rec: v:false, exec: v:false })
+        Assert Equals(opts, #{ reg: 'x', rec: v:false, exec: v:false, check_continue: v:true })
       End
     End
 

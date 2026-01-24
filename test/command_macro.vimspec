@@ -12,6 +12,10 @@ Describe :Macro
 
   Before each
     let @q = ''
+
+    " Make '--check-continue' off in default while running tests.
+    let g:litedit_opts = { 'macro': { 'check_continue': v:false } }
+
     %bwipeout!
   End
 
@@ -32,18 +36,20 @@ Describe :Macro
     Assert Equals(getline(1, '$'), ["f(abc)", "f(def)"])
   End
 
+  It is robust for complicated angle brackets.
+    call setline(1, ["abc", "def"])
+    call Macro('ciwf<<C-r>"><ESC>j')
+    Assert Equals(getline(1, '$'), ['f<abc>', 'f<def>'])
+  End
+
   It accepts whitespace at the head of command.
     call Macro('<Space> xxx')
     Assert Match(@q, '^  xxx')
   End
 
   Context no-recursive
-    Before all
-      let g:litedit_opts = #{ macro: #{ rec: v:false } }
-    End
-
-    After all
-      unlet g:litedit_opts
+    Before each
+      let g:litedit_opts.macro.rec = v:false
     End
 
     It executes given command only once.
@@ -54,12 +60,8 @@ Describe :Macro
   End
 
   Context no-exec
-    Before all
-      let g:litedit_opts = #{ macro: #{ exec: v:false } }
-    End
-
-    After all
-      unlet g:litedit_opts
+    Before each
+      let g:litedit_opts.macro.exec = v:false
     End
 
     It does not run given command automatically.
@@ -99,11 +101,29 @@ Describe :Macro
 
   Context enable check-continue option
     Before all
-      let g:litedit_opts = #{ macro: #{ check_continue: v:true, exec: v:true, rec: v:true } }
+      function SetAnswer(ans) abort
+        augroup test-litedit
+          autocmd!
+          execute $'autocmd CmdlineEnter @ ++once call feedkeys("{a:ans}\<CR>", "ni")'
+        augroup END
+      endfunction
+      command! -nargs=1 SetAnswer call SetAnswer(<q-args>)
     End
 
     After all
-      unlet g:litedit_opts
+      delcommand SetAnswer
+      delfunction SetAnswer
+      augroup! test-litedit
+    End
+
+    Before each
+      let g:litedit_opts.macro.check_continue = v:true
+      let g:litedit_opts.macro.exec = v:true
+      let g:litedit_opts.macro.rec = v:true
+    End
+
+    After each
+      autocmd! test-litedit
     End
 
     Context check timing of dialog
@@ -116,33 +136,47 @@ Describe :Macro
       End
 
       It shows dialog after the first try of macro.
-        Skip '--check-continue' is not implemented yet.
-
         call setline(1, ["abc", "def"])
-        Macro ^xxj<Cmd>call add(g:log_state, getline(1, '$'))<CR>
-        call feedkeys('y', 'nx')
+        SetAnswer y
 
+        call Macro('^xxj<Cmd>call add(g:log_state, getline(1, "$"))<CR>')
         Assert NotEmpty(g:log_state)
         Assert Equals(g:log_state[0], ['c', 'def'])
       End
     End
 
     It continues running when the answer is yes.
-      Skip '--check-continue' is not implemented yet.
-
       call setline(1, ["abc", "def"])
-      Macro ^xxj
-      call feedkeys('y', 'nx')
+      SetAnswer y
+
+      call Macro('^xxj')
       Assert Equals(getline(1, '$'), ["c", "f"])
     End
 
     It cancels running when the answer is no.
-      Skip '--check-continue' is not implemented yet.
-
       call setline(1, ["abc", "def"])
-      Macro ^xxj
-      call feedkeys('n', 'nx')
+      SetAnswer n
+
+      call Macro('^xxj')
       Assert Equals(getline(1, '$'), ["c", "def"])
+    End
+
+    It does not break macro content for <XXX> keys.
+      call setline(1, ['abc', 'def', 'ghi'])
+      SetAnswer y
+
+      call Macro('ciwf<<C-r>"><ESC>j')
+      Assert Equals(getline(1, '$'), ['f<abc>', 'f<def>', 'f<ghi>'])
+    End
+
+    It's dialog is not shown when '--rec' is off.
+      let g:litedit_opts.macro.rec = v:false
+      SetAnswer y
+
+      call Macro('iabc<ESC>')
+
+      const autocmds = execute('autocmd test-litedit CmdlineEnter')->split("\n")
+      Assert Equals(len(autocmds), 3, autocmds)
     End
 
   End

@@ -87,9 +87,22 @@ COMMANDS						*litedit-commands*
 	 	When this is true, |:Macro| makes {commands} self-recursive
 		macro; i.e. the macro calls itself after execution.
 
+                Be sure to write "good" {commands} so that you'll result in
+                the Normal mode when the execution of {commands} ends, or you
+                may get weird result.
+
 	 --exec		(boolean, default is on)
 	 	When this is false, the |:Macro| command only record {commands}
 		and does not execute the macro automatically.
+
+	 --check-continue	(boolean, default is on)
+	 	When this is enabled, the |:Macro| command shows a input
+		dialog to confirm whether you want to continue execution of
+		the macro or not after the first execution of {commands}.
+
+		This is useful when you're not certain of {commands} so that
+		you want to check how the text is actually modified by
+		{commands}.
 
 	 --
 	 	All of the text after "--" is treated as {commands}.
