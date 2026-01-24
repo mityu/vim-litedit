@@ -1,0 +1,54 @@
+let s:assert = themis#helper('assert')
+call themis#helper('command').with(s:assert)
+call themis#func_alias(s:assert)
+
+Describe litedit#command#complete_normal()
+  Before all
+    function Complete(arglead, cmdline, curpos) abort
+      return litedit#command#complete_normal(
+        \ a:arglead, $'Normal {a:cmdline}', strlen('Normal ') + a:curpos)
+    endfunction
+  End
+
+  After all
+    delfunction Complete
+  End
+
+  Context no-argument
+    Before all
+      function CompleteWithNoArg(s) abort
+        return litedit#command#complete_normal('', $'{a:s} ', strlen(a:s) + 1)
+      endfunction
+    End
+
+    After all
+      delfunction CompleteWithNoArg
+    End
+
+    It completes all of the option flags.
+      const expected = ['--', '--dotrepeat', '--no-dotrepeat']
+      Assert Equals(CompleteWithNoArg('Normal'), expected)
+      Assert Equals(CompleteWithNoArg('Normal!'), expected)
+      Assert Equals(CompleteWithNoArg("'<,'>Normal!"), expected)
+      Assert Equals(CompleteWithNoArg("'< Normal!"), expected)
+    End
+  End
+
+  It completes a part of option flags.
+    const r = Complete('--n', '--n', 3)
+    Assert Equals(r, ['--no-dotrepeat'])
+  End
+
+  It completes nothing after "--".
+    Assert Equals(Complete('--d', '-- --d', 6), [])
+  End
+
+  It completes nothing when the argument does not seem a start of flags.
+    Assert Equals(Complete('x', 'x', 1), [])
+  End
+
+  It completes nothing when arglead is after non-flag word.
+    Assert Equals(Complete('--', 'x --', 4), [])
+  End
+End
+

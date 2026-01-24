@@ -1,0 +1,35 @@
+let s:assert = themis#helper('assert')
+let s:fn = themis#helper('scope').funcs('autoload/litedit/command.vim')
+call themis#helper('command').with(s:assert)
+call themis#func_alias(s:assert)
+call themis#func_alias(s:fn)
+
+Describe s:trim_command_range()
+  Before all
+    function Trim(text) abort
+      return s:fn.trim_command_range(a:text)
+    endfunction
+  End
+
+  After all
+    delfunction Trim
+  End
+
+  It removes various kind of ranges.
+    const cases = [
+      \ ["'<,'>XXX", 'XXX'],
+      \ ['/XX\/YY/XXX', 'XXX'],
+      \ ['3+3, 4 XXX', ' XXX'],
+      \ ['%XXX', 'XXX'],
+      \ ]
+
+    for [input, output] in cases
+      Assert Equals(Trim(input), output, $'input: {input}')
+    endfor
+  End
+
+  It do nothing when no range is given.
+    Assert Equals(Trim('XXX'), 'XXX')
+    Assert Equals(Trim("XXX '<,'>"), "XXX '<,'>")
+  End
+End

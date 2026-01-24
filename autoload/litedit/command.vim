@@ -1,15 +1,37 @@
 const s:r = litedit#result#get_builders()
 
+function! s:get_non_escape_char_pattern(char, do_escape = v:true) abort
+  const char = a:do_escape ? escape(a:char, '\.^$?*+~()[]{@|=&') : a:char
+  return $'\v%(%(\_^|[^\\])%(\\\\)*)@<={char}'
+endfunction
+
+function! s:get_range_matcher() abort
+  const matcher_slash = s:get_non_escape_char_pattern('/')
+  const matcher_question = s:get_non_escape_char_pattern('?')
+  const matcher_search = $'%(/.*{matcher_slash}|\?.*{matcher_question})'
+  const matcher_position_elements =
+    \ ['\d+', '[.$%]', "'.", $'{matcher_search}%({matcher_search})?','\\[/?&]']
+    \ ->join('|')
+  const matcher_position = $'%({matcher_position_elements})%(\s*[+-]\d+)?'
+  return $'\v{matcher_position}%(\s*[,;]\s*{matcher_position})?'
+endfunction
+
 " Same as the built-in trim(), but only trim white-spaces from the head of
 " string.
 function s:trim_head(s) abort
   return trim(a:s, '', 1)
 endfunction
 
+function s:trim_command_range(s) abort
+  return a:s[strlen(matchstr(a:s, $'^\s*{s:get_range_matcher()}')) :]
+endfunction
+
+" Return a list of characters between `start` and `end`.
 function s:range_char(start, end) abort
   return range(char2nr(a:start), char2nr(a:end))->map('nr2char(v:val)')
 endfunction
 
+" Get next token consist of non-whitespace characters.
 function s:get_next_chunk(text) abort
   const chunk = matchstr(a:text, '^\S*')
   const text = a:text[strlen(chunk) :]
@@ -191,51 +213,12 @@ function litedit#command#normal(got_bang, args) abort
 endfunction
 
 function litedit#command#complete_normal(arglead, cmdline, curpos) abort
-  " TODO: Implement
-  return []
+  let cmdline = a:cmdline->strpart(0, a:curpos)->s:trim_command_range()->matchstr('^\s*\a\+!\?\zs.*$')
+  return s:complete_args(s:args_config.normal, cmdline)
 endfunction
 
 
 function litedit#command#complete_macro(arglead, cmdline, curpos) abort
   let cmdline = a:cmdline->strpart(0, a:curpos)->matchstr('^\s*\a\+\zs.*$')
   return s:complete_args(s:args_config.macro, cmdline)
-  "let cmdline = a:cmdline->strpart(0, a:curpos)->matchstr('^\s*\a\+\zs.*$')
-  "let arglead = v:null
-  "let argkind = 'flag'
-  "
-  "while v:true
-  "  let cmdline = s:trim_head(cmdline)
-  "  let token = matchstr(cmdline, '^\S*')
-  "  let cmdline = cmdline[strlen(token) :]
-  "
-  "  if cmdline ==# ''
-  "    let arglead = token
-  "    break
-  "  endif
-  "
-  "  if argkind ==# 'flag'
-  "    if token ==# '--' || token !~# '^--'
-  "      return []
-  "    elseif token ==# '--reg'
-  "      let argkind = 'arg-of-reg'
-  "    endif
-  "  elseif argkind ==# 'arg-of-reg'
-  "    let argkind = 'flag'
-  "  else
-  "    throw $'Internal error: unknown argkind: {argkind}'
-  "  endif
-  "endwhile
-  "
-  "if argkind ==# 'flag'
-  "  let flags = ['--', '--exec', '--rec', '--reg', '--no-exec', '--no-rec']
-  "  return filter(flags, { _, v -> strpart(v, 0, strlen(arglead)) ==# arglead })
-  "elseif argkind ==# 'arg-of-reg'
-  "  let regs = ['"'] + s:range_char('0', '9') + s:range_char('a', 'z') + s:range_char('A', 'Z')
-  "  if arglead =~# '^@'
-  "    call map(regs, '"@" .. v:val')
-  "  endif
-  "  return filter(regs, { _, v -> strpart(v, 0, strlen(arglead)) ==# arglead })
-  "else
-  "  throw $'Internal error: unknown argkind: {argkind}'
-  "endif
 endfunction
