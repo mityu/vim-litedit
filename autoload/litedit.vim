@@ -31,7 +31,8 @@ function s:check_continue(reg, content) abort
   let answer = ''
   call inputsave()
   try
-    let answer = input('Continue executing macro? [y/n]')
+    redraw
+    let answer = input('Continue executing macro? [y/n] ')
   finally
     call inputrestore()
   endtry
