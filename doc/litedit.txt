@@ -119,15 +119,17 @@ FUNCTIONS						*litedit-functions*
 litedit#normal({query}, {opts})
 	The function interface of |:Normal|.
 	{query} is the command to execute.
-	{opts} is a |Dict| consist of options for |:Normal|.
-	TODO: Write
+	{opts} is a |Dict| consist of options for |:Normal| and should be what
+	you can set in `g:litedit_opts.normal`.  See
+	|litedit-option-structure| for the defails of the format.
 
 							*litedit#macro()*
 litedit#macro({opts})
 	The function interface of |:Macro|.
 	{query} is the command to execute.
-	{opts} is a |Dict| consist of options for |:Macro|.
-	TODO: Write
+	{opts} is a |Dict| consist of options for |:Macro| and should be what
+	you can set in `g:litedit_opts.macro`.  See |litedit-option-structure|
+	for the details of the format.
 
 
 ==============================================================================
@@ -181,6 +183,15 @@ Examples: >vim
 
 	let g:litedit_opts = #{
 	\ macro: #{ reg: 'x', exec: v:false },
+	\ }
+<
+
+When a option name contains the "-" character (e.g. the "--check-continue"
+option), it should be replaced to "_" to set option value for the option via
+option variable: >vim
+	" Turn off the '--check-continue' option of ':Macro' in default.
+	let g:litedit_opts = #{
+	\ macro: #{ check_continue: v:false },
 	\ }
 <
 
