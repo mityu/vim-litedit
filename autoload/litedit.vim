@@ -53,19 +53,27 @@ function litedit#print_error(msg) abort
   echohl NONE
 endfunction
 
+function litedit#__normal_set_opfunc(cmd, _) abort
+  const cmd = s:replace_termcodes(a:cmd)
+  let &operatorfunc = { _ -> execute(cmd, '') }
+endfunction
+
 function litedit#normal(query, opts) abort
   const query = s:replace_termcodes(a:query)
   const opts = extend(s:get_opts('normal'), a:opts, 'force')
   const cmd = $'normal{opts.remap ? '' : '!'} {query}'
 
   if opts.dotrepeat
-    " This dot-repeat hack is from this article. Thank you @kawarimidoll!
+    " This dot-repeat hack idea is from this article. Thank you @kawarimidoll!
     " https://zenn.dev/vim_jp/articles/2d14953753f044
-    let &operatorfunc = {_ -> execute(cmd, '')}
-    call feedkeys('g@l', 'ni')
-  else
-    execute cmd
+
+    " TODO: Optimize or beter solution.
+    const opfunc =
+      \ $'function("litedit#__normal_set_opfunc", [{string(keytrans(cmd))}])'
+    call feedkeys($"\<Cmd>let &operatorfunc = {opfunc}\<CR>g@l", 'ni')
   endif
+
+  execute cmd
 endfunction
 
 function litedit#macro(query, opts) abort
