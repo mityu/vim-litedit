@@ -136,9 +136,12 @@ jobs:
           call feedkeys('', 'x')
 
           call add(g:log, '------')
-
           call feedkeys("\<Plug>(take-input)hij987\<CR>", 'ni')
           call feedkeys('', 'x')
+
+          call add(g:log, '------')
+          call feedkeys("asdf\<CR>", 'ni')
+          call add(g:input, input(''))
 
           %delete _
           call setline(1, '===autocmd-log===')
