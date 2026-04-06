@@ -46,6 +46,7 @@ jobs:
       download: ${{ matrix.download }}
 
   investigation:
+    if: false
     name: Vim ${{ matrix.vim_version }} ${{ matrix.configure_args }} on ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -92,10 +93,10 @@ jobs:
           - ubuntu-latest
 
         vim_version:
-          - v9.1.0000
-          - v9.1.1000
-          - v9.1.2000
-          - v9.2.0000
+          # - v9.1.0000
+          # - v9.1.1000
+          # - v9.1.2000
+          # - v9.2.0000
           - nightly
 
         enable_gui:
@@ -134,17 +135,22 @@ jobs:
           call feedkeys("@qxyzabc\<CR>", 'ni')
           call feedkeys('', 'x')
 
+          call add(g:log, '------')
+
+          call feedkeys("\<Plug>(take-input)hij987\<CR>", 'ni')
+          call feedkeys('', 'x')
+
           %delete _
           call setline(1, '===autocmd-log===')
           call append('$', g:log)
           call append('$', '===input===')
-          cdall append('$', g:input)
+          call append('$', g:input)
           %print
 
-          if len(g:log) == 2
+          if len(g:log) == 5
             quitall!
           else
-            cquit!
+            cquit! 13
           endif
           EOF
       - name: Run test
