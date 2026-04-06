@@ -120,8 +120,9 @@ jobs:
       - name: Prepare test code
         run: |
           cat - <<EOF > ./test.vim
+          let g:input = []
           function TakeInput() abort
-            call input('')
+            call add(g:input, input(''))
           endfunction
 
           let g:log = []
@@ -130,11 +131,16 @@ jobs:
 
           nnoremap <expr> <Plug>(take-input) TakeInput()
           call setreg('q', "\<Plug>(take-input)")
-          call feedkeys("@q\<CR>", 'ni')
+          call feedkeys("@qxyzabc\<CR>", 'ni')
           call feedkeys('', 'x')
+
           %delete _
-          call setline(1, g:log)
+          call setline(1, '===autocmd-log===')
+          call append('$', g:log)
+          call append('$', '===input===')
+          cdall append('$', g:input)
           %print
+
           if len(g:log) == 2
             quitall!
           else
