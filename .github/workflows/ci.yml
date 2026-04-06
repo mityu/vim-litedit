@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - ci-investigation
   pull_request:
     paths-ignore:
       - doc/**
@@ -21,8 +22,6 @@ jobs:
       matrix:
         os:
           - ubuntu-latest
-          - macos-latest
-          - windows-latest
 
         vim_version:
           - v9.1.0000
@@ -45,12 +44,8 @@ jobs:
       matrix:
         os:
           - ubuntu-latest
-          - macos-latest
-          - windows-latest
 
         vim_version:
-          - v0.10.0
-          - v0.11.0
           - head
 
         download:
