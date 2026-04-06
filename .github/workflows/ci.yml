@@ -20,12 +20,12 @@ jobs:
       fail-fast: false
       matrix:
         os:
-          - ubuntu-latest
           - macos-latest
           - windows-latest
 
         vim_version:
           - v9.1.0000
+          - v9.2.0000
           - head
 
         download:
@@ -37,6 +37,42 @@ jobs:
       vim_version: ${{ matrix.vim_version }}
       os: ${{ matrix.os }}
       download: ${{ matrix.download }}
+
+  # FIXME: I don't know why, but on Ubuntu, tests fail when the Vim is compiled
+  # with GTK3 GUI.  As a workaround, separate tests on Ubuntu into a separate
+  # job here and make sure to prepare Vim compiled without GUI feature.
+  test-on-vim-ubuntu:
+    name: Vim ${{ matrix.vim_version }} on ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        vim_version:
+          - v9.1.0000
+          - v9.2.0000
+          - nightly
+
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Setup Vim
+        id: vim
+        uses: rhysd/action-setup-vim@v1
+        with:
+          version: ${{ matrix.vim_version }}
+          configure-args: --enable-gui=no
+      - name: Show Vim version
+        run: |
+          ${{ steps.vim.outputs.executable }} --version
+      - name: Setup themis.vim
+        uses: actions/checkout@v6
+        with:
+          repository: thinca/vim-themis
+          path: themis
+      - name: Run test
+        env:
+          THEMIS_VIM: ${{ steps.vim.outputs.executable }}
+        run: |
+          ./themis/bin/themis --reporter tap
 
   test-on-neovim:
     name: Neovim ${{ matrix.vim_version }} on ${{ matrix.os }}
