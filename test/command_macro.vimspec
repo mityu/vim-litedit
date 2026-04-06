@@ -108,6 +108,7 @@ Describe :Macro
           autocmd!
           execute $'autocmd CmdlineEnter @ ++once call feedkeys("{a:ans}\<CR>", "ni")'
           autocmd CmdlineChanged @ call themis#log($'CmdlineChanged: {getcmdline()}')
+          autocmd CmdlineEnter @ call themis#log($'CmdlineEnter: {getcmdline()}')
         augroup END
         call themis#log(execute('autocmd test-litedit'))
       endfunction
