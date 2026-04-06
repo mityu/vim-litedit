@@ -122,7 +122,9 @@ jobs:
         run: |
           cat - <<EOF > ./test.vim
           let g:input = []
+          let g:called = []
           function TakeInput() abort
+            call add(g:called, 'YES')
             call add(g:input, input(''))
           endfunction
 
@@ -148,9 +150,11 @@ jobs:
           call append('$', g:log)
           call append('$', '===input===')
           call append('$', g:input)
+          call append('$', '===called===')
+          call append('$', g:called)
           %print
 
-          if len(g:log) == 5
+          if len(g:log) == 7
             quitall!
           else
             cquit! 13
