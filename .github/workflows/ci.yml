@@ -25,6 +25,7 @@ jobs:
 
         vim_version:
           - v9.1.0000
+          - v9.1.1000
           - head
 
         download:
@@ -33,27 +34,6 @@ jobs:
     uses: mityu/workflow-run-vim-themis/.github/workflows/run-themis.yml@v20260116
     with:
       vim_type: vim
-      vim_version: ${{ matrix.vim_version }}
-      os: ${{ matrix.os }}
-      download: ${{ matrix.download }}
-
-  test-on-neovim:
-    name: Neovim ${{ matrix.vim_version }} on ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os:
-          - ubuntu-latest
-
-        vim_version:
-          - head
-
-        download:
-          - available
-
-    uses: mityu/workflow-run-vim-themis/.github/workflows/run-themis.yml@v20260116
-    with:
-      vim_type: neovim
       vim_version: ${{ matrix.vim_version }}
       os: ${{ matrix.os }}
       download: ${{ matrix.download }}
