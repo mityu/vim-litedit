@@ -154,7 +154,7 @@ jobs:
           call append('$', g:called)
           %print
 
-          if len(g:log) == 7
+          if len(g:log) == 8
             quitall!
           else
             cquit! 13
@@ -162,4 +162,4 @@ jobs:
           EOF
       - name: Run test
         run: |
-          ${{ steps.vim.outputs.executable }} -u NONE -i NONE -n -N -e -s --cmd 'source ./test.vim'
+          ${{ steps.vim.outputs.executable }} -u NONE -i NONE -n -N -e -s -X -c 'set t_u7' --cmd 'source ./test.vim'
