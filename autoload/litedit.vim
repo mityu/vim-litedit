@@ -33,15 +33,15 @@ function s:check_continue(reg, content) abort
   try
     redraw
     let answer = input('Continue executing macro? [y/n] ')
+
+    if answer =~? '^y'
+      return $'@{a:reg}'
+    else
+      return ''
+    endif
   finally
     call inputrestore()
   endtry
-
-  if answer =~? '^y'
-    return $'@{a:reg}'
-  else
-    return ''
-  endif
 endfunction
 
 function litedit#print_error(msg) abort
