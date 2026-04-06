@@ -28,6 +28,7 @@ endfunction
 function s:check_continue(reg, content) abort
   call setreg(a:reg, a:content)
 
+  call themis#log($'s:check_continue({a:reg}, {a:content})')
   let answer = ''
   call inputsave()
   try
