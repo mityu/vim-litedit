@@ -25,7 +25,7 @@ jobs:
 
         vim_version:
           - v9.1.0000
-          - v9.1.1000
+          - v9.1.2108
           - head
 
         download:
