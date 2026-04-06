@@ -16,6 +16,7 @@ permissions:
 
 jobs:
   test-on-vim:
+    if: false
     name: Vim ${{ matrix.vim_version }} on ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -26,13 +27,13 @@ jobs:
         vim_version:
           # - v9.1.2110
           # - v9.1.2120
-          - v9.1.2125
+          # - v9.1.2125
           - v9.1.2130
-          - v9.1.2131
+          - v9.1.2131  # vim --version shows that it is v9.1.2132
           - v9.1.2132
-          - v9.1.2133
-          - v9.1.2134
-          - v9.1.2135
+          # - v9.1.2133
+          # - v9.1.2134
+          # - v9.1.2135
 
         download:
           - available
@@ -43,3 +44,39 @@ jobs:
       vim_version: ${{ matrix.vim_version }}
       os: ${{ matrix.os }}
       download: ${{ matrix.download }}
+
+  investigation:
+    name: Vim ${{ matrix.vim_version }} ${{ matrix.configure_args }} on ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+        vim_version:
+          - nightly
+        configure_args:
+          - --enable-gui=no --enable-fail-if-missing
+          - --enable-gui=gtk3 --enable-fail-if-missing
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v6
+      - name: Setup Vim
+        id: vim
+        uses: rhysd/action-setup-vim@v1
+        with:
+          version: ${{ matrix.vim_version }}
+          configure-args: ${{ matrix.configure_args }}
+      - name: Show Vim version
+        run: |
+          ${{ steps.vim.outputs.executable }} --version
+      - name: Setup themis.vim
+        uses: actions/checkout@v6
+        with:
+          repository: thinca/vim-themis
+          path: themis
+      - name: Run test
+        env:
+          THEMIS_VIM: ${{ steps.vim.outputs.executable }}
+        run: |
+          ./themis/bin/themis --reporter tap
