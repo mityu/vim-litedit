@@ -82,3 +82,65 @@ jobs:
           THEMIS_VIM: ${{ steps.vim.outputs.executable }}
         run: |
           ./themis/bin/themis --reporter tap
+
+  test:
+    name: Vim ${{ matrix.vim_version }} with GUI=${{ matrix.enable_gui }} on ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+
+        vim_version:
+          - v9.1.0000
+          - v9.1.1000
+          - v9.1.2000
+          - v9.2.0000
+          - nightly
+
+        enable_gui:
+          - no
+          - gtk3
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Install deps
+        if: matrix.enable_gui == 'gtk3'
+        run: sudo apt-get install libxmu-dev libgtk-3-dev libxpm-dev
+      - name: Setup Vim
+        id: vim
+        uses: rhysd/action-setup-vim@v1
+        with:
+          version: ${{ matrix.vim_version }}
+          configure-args: |
+            --enable-gui=${{ matrix.enable_gui }} --enable-fail-if-missing
+      - name: Show Vim version
+        run: |
+          ${{ steps.vim.outputs.executable }} --version
+      - name: Prepare test code
+        run: |
+          cat - <<EOF > ./test.vim
+          function TakeInput() abort
+            call input('')
+          endfunction
+
+          let g:log = []
+          autocmd CmdlineEnter @ call add(g:log, 'CmdlineEnter:@')
+          autocmd CmdlineEnter * call add(g:log, $'CmdlineEnter(any):{expand('<afile>')}')
+
+          nnoremap <expr> <Plug>(take-input) TakeInput()
+          call setreg('q', "\<Plug>(take-input)")
+          call feedkeys("@q\<CR>", 'ni')
+          call feedkeys('', 'x')
+          %delete _
+          call setline(1, g:log)
+          %print
+          if len(g:log) == 2
+            quitall!
+          else
+            cquit!
+          endif
+          EOF
+      - name: Run test
+        run: |
+          ${{ steps.vim.outputs.executable }} -u NONE -i NONE -n -N -e -s --cmd 'source ./test.vim'
