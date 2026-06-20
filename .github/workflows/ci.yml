@@ -53,7 +53,7 @@ jobs:
 
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Setup Vim
         id: vim
         uses: rhysd/action-setup-vim@v1
@@ -64,7 +64,7 @@ jobs:
         run: |
           ${{ steps.vim.outputs.executable }} --version
       - name: Setup themis.vim
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           repository: thinca/vim-themis
           path: themis
