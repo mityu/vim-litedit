@@ -31,7 +31,7 @@ jobs:
         download:
           - available
 
-    uses: mityu/workflow-run-vim-themis/.github/workflows/run-themis.yml@v20260626
+    uses: mityu/workflow-run-vim-themis/.github/workflows/run-themis.yml@5be69f9736eda162c6933f05a378c10b8a532fb7 # v20260626
     with:
       vim_type: vim
       vim_version: ${{ matrix.vim_version }}
@@ -53,10 +53,10 @@ jobs:
 
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: Setup Vim
         id: vim
-        uses: rhysd/action-setup-vim@v1
+        uses: rhysd/action-setup-vim@febef33995d6649302e9d88dda81e071b68f16a7 # v1.6.1
         with:
           version: ${{ matrix.vim_version }}
           configure-args: --enable-gui=no
@@ -64,7 +64,7 @@ jobs:
         run: |
           ${{ steps.vim.outputs.executable }} --version
       - name: Setup themis.vim
-        uses: actions/checkout@v7
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           repository: thinca/vim-themis
           path: themis
@@ -92,7 +92,7 @@ jobs:
         download:
           - available
 
-    uses: mityu/workflow-run-vim-themis/.github/workflows/run-themis.yml@v20260626
+    uses: mityu/workflow-run-vim-themis/.github/workflows/run-themis.yml@5be69f9736eda162c6933f05a378c10b8a532fb7 # v20260626
     with:
       vim_type: neovim
       vim_version: ${{ matrix.vim_version }}
