@@ -51,6 +51,12 @@ Describe :Normal
     Assert Equals(getline(1, '$'), ['abc', 'xyz'])
   End
 
+  It works with :global command.
+    call setline(1, ['abc', 'fgh', 'xyz'])
+    %global/./Normal Ax<ESC>
+    Assert Equals(getline(1, '$'), ['abcx', 'fghx', 'xyzx'])
+  End
+
   Context dot-repeat test
     Before each
       call feedkeys("iabc\<ESC>", 'nix')  " Overwrite dot-repeat stack.
@@ -65,6 +71,18 @@ Describe :Normal
       Assert Equals(getline(1), 'abcxyz')
       normal! .
       Assert Equals(getline(1), 'xyz')
+    End
+
+    It works with :global command.
+      call setline(1, ['abc', 'fgh', 'xyz'])
+      %global/./Normal --dotrepeat Ax<ESC>
+      call feedkeys('', 'x')
+      Assert Equals(getline(1, '$'), ['abcx', 'fghx', 'xyzx'])
+
+      %delete _
+      call setline(1, ['abc'])
+      normal! .
+      Assert Equals(getline(1, '$'), ['abcx'])
     End
 
     Context dot-repeat is disabled
